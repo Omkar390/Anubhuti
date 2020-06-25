@@ -323,11 +323,18 @@ function showdiv(n) {
     <form id="form1" runat="server" style="height:100%;width:100%">
 
         <asp:HiddenField runat="server" ID="hdnAnswer" />
+        <asp:HiddenField runat="server" ID="hdnAnswerMarks" />
+
         <asp:HiddenField runat="server" ID="hdnAnswerUnChecked" />
         <asp:HiddenField runat="server" ID="hdnAnswerAdd" />
         <asp:HiddenField runat="server" ID="hdnAnsType" />
         <asp:HiddenField runat="server" ID="hdnStarValue" Value="0" />
         <asp:HiddenField runat="server" ID="hdnValidateMe" Value="0" />
+        <asp:HiddenField runat="server" ID="hdnDisagreecomp" />
+        <asp:HiddenField runat="server" ID="hdnDisagreepart" />
+        <asp:HiddenField runat="server" ID="hdnAgreepart" />
+        <asp:HiddenField runat="server" ID="hdnAgreecomp" />
+
     
     
     <br /><br />    

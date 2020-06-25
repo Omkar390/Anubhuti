@@ -19,7 +19,7 @@ Partial Class survey_SurveyPage
                 'change in declaration of object
                 Dim strSQL As String
                 Dim dt As New DataTable
-
+                Session("ANSWERMARKS") = "0"
                 'for testing we used the surveyid and uerid
                 'Session("SurveyId") = "6"
                 'Session("user_id") = "12"
@@ -49,14 +49,16 @@ Partial Class survey_SurveyPage
 
                     'Get Survey Id Based on survey GUID!
                     Session("surveyguid") = Request.QueryString("SGUID")
-                    Session("meetingguid") = Request.QueryString("GUID")
+
                     'Session("GUID") = "1B187EC2-8D98-45BF-99B3-6FE9845A9692"
                     Session("GUID") = "1B187EC2-8D98-45BF-99B3-6FE9845A9692"
+                    Session("meetingguid") = Request.QueryString("GUID")
 
-                    Dim dbc As New DBHelperClient
-                    'this shows data from client_2002 database from tblsurvey it shows surveyid using the id
-                    strSQL = " Select SurveyId from tblSurvey where id = '" & Session("surveyguid") & "' limit 1"
-                    Session("SurveyId") = dbc.ExecuteScalar(CommandType.Text, strSQL)
+                    'Dim dbc As New DBHelperClient
+                    ''this shows data from client_2002 database from tblsurvey it shows surveyid using the id
+                    'strSQL = " Select SurveyId from tblSurvey where id = '" & Session("surveyguid") & "' limit 1"
+                    'Session("SurveyId") = dbc.ExecuteScalar(CommandType.Text, strSQL)
+                    Session("SurveyId") = Session("surveyguid")
                 Else                
                     If Request.QueryString("PMode") = "P" Then
                         Session("PMode") = "P"
@@ -103,7 +105,7 @@ Partial Class survey_SurveyPage
                     " PTBackColor, CSFont,  STFont, STFontSize, PTFont, PTFontSize from tblsurveydesign where SurveyId = " & Session("SurveyId")
             dsImg = db1.DataAdapter(CommandType.Text, strSql)
 
-            imgsmalllogo.Src = "http://salesshark.us/SurveyLogo/" & Session("client_id") & "/" & dsImg.Tables(0).Rows(0).Item("logo").ToString
+            imgsmalllogo.Src = ConfigurationManager.AppSettings("logopath") & Session("client_id") & "/" & dsImg.Tables(0).Rows(0).Item("logo").ToString
             form1.Style.Item("background-color") = dsImg.Tables(0).Rows(0).Item("PTBackColor").ToString
             logodiv.Style.Item("background-color") = dsImg.Tables(0).Rows(0).Item("CSLBackColor").ToString
 
@@ -132,15 +134,16 @@ Partial Class survey_SurveyPage
 
             'get the survey id and also check for last completed question and jump there...
 
-            Dim parms(0) As DBHelperClient.Parameters
+            Dim parms(1) As DBHelperClient.Parameters
+            Dim parms1(0) As DBHelperClient.Parameters
             Dim db As New DBHelperClient
             Dim ds1 As New DataSet
             'parms(0) = New DBHelperClient.Parameters("i_surveyguid", Session("surveyguid"))
             'ds1 = db.DataAdapter(CommandType.StoredProcedure, "SP_GetSurveyIDByGUID", parms)
 
             If Session("PMode") = "P" Then
-                parms(0) = New DBHelperClient.Parameters("p_surveyid", Session("SurveyId"))
-                ds1 = db.DataAdapter(CommandType.StoredProcedure, "SP_GetSurveyIDPreview", parms)
+                parms1(0) = New DBHelperClient.Parameters("p_surveyid", Session("SurveyId"))
+                ds1 = db.DataAdapter(CommandType.StoredProcedure, "SP_GetSurveyIDPreview", parms1)
             Else
                 parms(0) = New DBHelperClient.Parameters("p_surveyid", Session("SurveyId"))
                 parms(1) = New DBHelperClient.Parameters("p_meetingguid", Session("meetingguid"))
@@ -204,7 +207,7 @@ Partial Class survey_SurveyPage
         Try
             lblErrorMessage.Text = ""
             lblErrorMessage.Visible = False
-             
+
             If Session("sqorder") > 0 Then
                 btnPrev.Visible = True
                 If Not boolFirstTime And Session("SAVEANSWER") = "Y" Then
@@ -307,20 +310,20 @@ Partial Class survey_SurveyPage
 
                     'show addnewoption if applicable!
                     If ds1.Tables(0).Rows(0)("AddNewOption") = "1" Then
-                            divAddNew.Visible = True
-                        Else
-                            divAddNew.Visible = False
-                        End If
-                        If Qcontainer.Controls.Count > 0 Then
-                            Qcontainer.Controls.Clear()
-                        End If
-                        If ds1.Tables.Count > 1 Then
-                            addcontrolsforprev(ds1)
-                        End If
-                        lblQID.InnerHtml = Session("sqorder") & " of "
+                        divAddNew.Visible = True
                     Else
-                        btnNext.Visible = False
-                    lblQuestion.InnerHtml = "Thanks for taking the Survey!"
+                        divAddNew.Visible = False
+                    End If
+                    If Qcontainer.Controls.Count > 0 Then
+                        Qcontainer.Controls.Clear()
+                    End If
+                    If ds1.Tables.Count > 1 Then
+                        addcontrolsforprev(ds1)
+                    End If
+                    lblQID.InnerHtml = Session("sqorder") & " of "
+                Else
+                    btnNext.Visible = False
+                    lblQuestion.InnerHtml = "Thanks for taking the Survey!"  '1
                     btnPrev.Visible = False
                     btnNext.Visible = False
                     lblQID.InnerHtml = Session("sqorder") & " of "
@@ -333,7 +336,7 @@ Partial Class survey_SurveyPage
                 End If
             Else
                 btnNext.Visible = False
-                lblQuestion.InnerHtml = "Thanks for taking the Survey!"
+                lblQuestion.InnerHtml = "Thanks for taking the Survey!"  '2
                 btnPrev.Visible = False
                 btnNext.Visible = False
                 lblQID.InnerHtml = Session("sqorder") & " of "
@@ -357,7 +360,7 @@ Partial Class survey_SurveyPage
             'insert into tblSurveyResultDetail
             'handle single answer or multiple
             Select Case Session("anstype").ToString
-                Case "Yes or No", "Yes or No or Can't Say", "Select one of many", "Text(100)", "Freeform Text", "Date", "Number", "Scale(1-100)", "STARS", "Agree - Disagree"
+                Case "Yes or No", "Yes or No or Can't Say", "Select one of many", "Text(100)", "Freeform Text", "Date", "Number", "Scale(1-100)", "STARS"
                     'insert the answer
                     'Session("ANSWER") = DirectCast(Me.FindControl("rbList"), RadioButtonList).SelectedValue
                     If hdnAnswer.Value = "true" Then
@@ -388,6 +391,26 @@ Partial Class survey_SurveyPage
                     'Case "CAMERA"
                     '    'InsertAnswer(Session("anstype"), Session("QTEXT"), 0)
                     '    'RefreshCamera()
+
+
+
+                    'Select Case Session("marks").ToString
+                Case "Agree - Disagree"
+                    'insert the answer
+                    'Session("ANSWER") = DirectCast(Me.FindControl("rbList"), RadioButtonList).SelectedValue
+                    If hdnAnswer.Value = "CompletelyDisagree" Then
+                        hdnAnswerMarks.Value = hdnDisagreecomp.Value
+                    ElseIf hdnAnswer.Value = "PartiallyDisagree" Then
+                        hdnAnswerMarks.Value = hdnDisagreepart.Value
+                    ElseIf hdnAnswer.Value = "PartiallyAgree" Then
+                        hdnAnswerMarks.Value = hdnAgreepart.Value
+                    ElseIf hdnAnswer.Value = "CompletelyAgree" Then
+                        hdnAnswerMarks.Value = hdnAgreecomp.Value
+                    End If
+                    'Session("ANSWER") = hdnAnswerMarks.Value
+                    Session("ANSWERMARKS") = hdnAnswerMarks.Value
+                    InsertAnswer(Session("anstype"), Session("QTEXT"), 0)
+
                 Case Else
 
             End Select
@@ -464,7 +487,7 @@ Partial Class survey_SurveyPage
     Private Sub InsertAnswer(ByVal anstype As String, ByVal qtext As String, ByVal deleteflag As Integer)
         Dim db As New DBHelperClient
         Dim ds1 As New DataSet
-        Dim parms(6) As DBHelperClient.Parameters
+        Dim parms(7) As DBHelperClient.Parameters
         parms(0) = New DBHelperClient.Parameters("p_surveyguid", Session("surveyguid"))
         parms(1) = New DBHelperClient.Parameters("p_SQID", Session("SQID"))
         parms(2) = New DBHelperClient.Parameters("p_QTEXT", qtext)
@@ -472,6 +495,9 @@ Partial Class survey_SurveyPage
         parms(4) = New DBHelperClient.Parameters("p_ANSWER", Session("ANSWER"))
         parms(5) = New DBHelperClient.Parameters("p_deleteflag", deleteflag)
         parms(6) = New DBHelperClient.Parameters("p_meetingguid", Session("meetingguid"))
+        parms(7) = New DBHelperClient.Parameters("p_answermarks", Session("ANSWERMARKS"))
+
+        'parms(7) = New DBHelperClient.Parameters("p_marks", Session("marks"))
         If Session("SurveyId") = "1" Then
             db.ExecuteNonQuery(CommandType.StoredProcedure, "SP_InsertAnswer", parms)
         Else
@@ -758,6 +784,8 @@ Partial Class survey_SurveyPage
                         lst.Style.Item("font-size") = (DsImg.Tables(0).Rows(0).Item("PTFont").ToString) & "px"
                         li.Controls.Add(lst)
                         ulAgreeDisagree.Controls.Add(li)
+                        hdnDisagreecomp.Value = ds1.Tables(1).Rows(0)("marks").ToString
+
 
                         li = New HtmlGenericControl("li")
                         li.Attributes.Add("class", "radio")
@@ -771,6 +799,7 @@ Partial Class survey_SurveyPage
                         lst.Style.Item("font-size") = (DsImg.Tables(0).Rows(0).Item("PTFont").ToString) & "px"
                         li.Controls.Add(lst)
                         ulAgreeDisagree.Controls.Add(li)
+                        hdnDisagreepart.Value = ds1.Tables(1).Rows(1)("marks").ToString
 
                         li = New HtmlGenericControl("li")
                         li.Attributes.Add("class", "radio")
@@ -784,6 +813,7 @@ Partial Class survey_SurveyPage
                         lst.Style.Item("font-size") = (DsImg.Tables(0).Rows(0).Item("PTFont").ToString) & "px"
                         li.Controls.Add(lst)
                         ulAgreeDisagree.Controls.Add(li)
+                        hdnAgreepart.Value = ds1.Tables(1).Rows(2)("marks").ToString
 
                         li = New HtmlGenericControl("li")
                         li.Attributes.Add("class", "radio")
@@ -797,6 +827,7 @@ Partial Class survey_SurveyPage
                         lst.Style.Item("font-size") = (DsImg.Tables(0).Rows(0).Item("PTFont").ToString) & "px"
                         li.Controls.Add(lst)
                         ulAgreeDisagree.Controls.Add(li)
+                        hdnAgreecomp.Value = ds1.Tables(1).Rows(3)("marks").ToString
                     End If
                     SetAnswer(ds1, 13)
 
